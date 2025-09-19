@@ -1,0 +1,223 @@
+---
+title: "1. oceanwaves workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r eval=TRUE, message=FALSE, warning=FALSE, include=FALSE, echo=FALSE}
+library(devtools)
+
+load_all()
+conflicted::conflicts_prefer(dplyr::filter)
+```
+
+# 1. Import data:
+
+## Import spatial data
+
+First extract the reefs of interest from the GBRMPA shape file:
+
+```{r, message=FALSE, warning=FALSE, fig.width=3.5, fig.height=5, cache=TRUE}
+
+library(oceanwaves)
+library(dhw)
+library(sf)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+
+
+### download GBR shape file
+gbr_shape <- download_gbr_spatial(return = "base") |>
+  select(LOC_NAME_S, X_COORD, Y_COORD) |> 
+  st_make_valid() |> 
+  st_transform(20353)
+
+
+### Grep subset for target reefs
+whitsundays <- gbr_shape |> 
+  filter(grepl("Hook|Hayman|reef", LOC_NAME_S)) |> 
+  filter(grepl("20", LOC_NAME_S))
+
+ggplot() + theme_bw() +
+  geom_sf(data=whitsundays, aes(fill=LOC_NAME_S), show.legend=FALSE)
+
+```
+
+To calculate wave exposure, we want a series of points surrounding the outer reef / island boundaries (land-sea interface):
+
+```{r, message=FALSE, warning=FALSE, fig.width=3.5, fig.height=5, cache=TRUE}
+
+whitsundays_union <- whitsundays |>
+  st_union() |>
+  st_boundary() |>
+  st_cast("LINESTRING")
+
+
+
+ggplot() + theme_bw() +
+  geom_sf(data=whitsundays_union, show.legend=FALSE)
+```
+
+Finally, for For fetch calculations, extract the broader seascape surrounding the reefs of interest:
+
+```{r, message=FALSE, warning=FALSE, fig.width=5, fig.height=4.5, cache=TRUE}
+
+### extract broader region for fetch (50km from focus reefs)
+whitsundays_region <- st_crop(gbr_shape, 
+                              whitsundays |>
+                                st_union() |> 
+                                st_centroid() |> 
+                                st_buffer(20000))
+
+ggplot() + theme_bw() +
+  geom_sf(data=whitsundays_region) +
+  geom_sf(data=whitsundays, aes(fill=LOC_NAME_S), show.legend=FALSE)
+
+```
+
+## Import weather data
+
+The `extract_wunderground()` function extracts wind data (speed, bearing) from [Weather Underground](http://wunderground.com) (requires API key for access). To test functionality here, extract dates around Nov/Dec spawning window for the past 2 years and plot to check timeseries (plot by 3-hrly averages)
+
+```{r, message=FALSE, warning=FALSE, eval=FALSE, cache=TRUE}
+
+spawning_dates <- seq(ymd("2018-11-01"), ymd("2024-12-31"), by = "day") %>%
+  keep(~ month(.) %in% c(11, 12)) %>%
+  format("%Y%m%d")
+
+whitsundays_weather <- extract_wunderground(stations="ISHUTE4", daterange = spawning_dates, apikey="5cada843ef8e4f39ada843ef8e4f392d")
+
+# plot by 3hrly average:
+whitsundays_weather |>  
+  mutate(time = ymd_hms(time)) |> 
+  mutate(year = as.factor(year(date))) |> 
+  mutate(time_3hr = lubridate::floor_date(time, unit = "3 hours"), show.legend=FALSE) |> 
+  group_by(time_3hr, year) |> 
+  summarise(
+    speed = mean(windspeed_ms, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+
+ggplot() + theme_bw() +
+  facet_wrap(~year, scales="free", nrow=2) +
+  geom_line(aes(x = time_3hr, y = speed, color=year)) +
+  labs(x = "Time (3-hourly)", y = "Wind Speed (m/s)", title = "3-Hourly Average Wind Speed") 
+
+
+```
+
+
+```{r, eval=TRUE, echo=TRUE, fig.height=6, fig.width=9, include=TRUE, cache=TRUE}
+
+whitsundays_weather <- readRDS("/Users/rof011/oceanwaves/data/whitsundays_weather.rds") 
+
+bearingplot <- whitsundays_weather |>  
+  mutate(time = ymd_hms(time)) |> 
+  mutate(year = as.factor(year(date))) |> 
+  mutate(time_3hr = lubridate::floor_date(time, unit = "3 hours")) |> 
+  group_by(time_3hr, year) |> 
+  summarise(
+    speed = max(windspeed_ms, na.rm = TRUE),
+    bearing = mean(bearing, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+
+  ggplot() + theme_bw() +
+  facet_wrap(~year, scales="free", nrow=2) +
+  scale_y_continuous(limits=c(0,359), breaks=seq(0,360,90)) +
+  geom_line(aes(x = time_3hr, y = bearing, color=year), show.legend=FALSE) +
+  labs(x = "Time (3-hourly)", y = "Bearing", title = "3-Hourly Average Wind Bearing") 
+
+speedplot <- whitsundays_weather |>  
+  mutate(time = ymd_hms(time)) |> 
+  mutate(year = as.factor(year(date))) |> 
+  mutate(time_3hr = lubridate::floor_date(time, unit = "3 hours")) |> 
+  group_by(time_3hr, year) |> 
+  summarise(
+    speed = max(windspeed_ms, na.rm = TRUE),
+    bearing = mean(bearing, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+
+  ggplot() + theme_bw() +
+  scale_y_continuous(limits=c(0,25)) +
+  facet_wrap(~year, scales="free", nrow=2) +
+  geom_line(aes(x = time_3hr, y = speed, color=year), show.legend=FALSE) +
+  labs(x = "Time (3-hourly)", y = "speed", title = "3-Hourly Average Wind Speed") 
+
+library(patchwork)
+speedplot + bearingplot
+
+```
+
+# 2. Calculate points
+
+Generate a series of points along the boundaries to calculate fetch:
+
+```{r, fig.height=5.5, fig.width=3.5, message=FALSE, warning=FALSE, cache=TRUE}
+
+whitsundays_points <- calculate_points(whitsundays_union, 500)
+
+ggplot() + theme_bw() +
+  geom_sf(data=whitsundays, aes(fill=LOC_NAME_S), show.legend=FALSE) +
+  geom_sf(data = whitsundays_points, shape=21) 
+
+
+```
+
+# 3. Calculate fetch
+
+For each point calculate the bearings and corresponding fetch length (note - only mapping 10 points for clarity)
+
+```{r, message=FALSE, warning=FALSE, fig.height=5.5, fig.width=4.5, cache=TRUE}
+
+whitsundays_fetch <- calculate_fetch(point = whitsundays_points, 
+                                     degrees = 7.5, 
+                                     fetch = 5000, 
+                                     land = whitsundays_region, 
+                                     parallel = TRUE, 
+                                     cores = 8)
+
+ggplot() + theme_bw() +
+  geom_sf(data = whitsundays, aes(fill=LOC_NAME_S), show.legend=FALSE) +
+  geom_sf(data = whitsundays_fetch |> filter(id %in% sample(whitsundays_fetch$id, 10)), linewidth=0.2, show.legend=FALSE) 
+
+```
+
+
+# 4. Calculate waves
+
+```{r, message=FALSE, warning=FALSE, fig.height=5.5, fig.width=5, cache=TRUE}
+
+whitsundays_waves <- calculate_waves(wind = whitsundays_weather, 
+                                     fetch = whitsundays_fetch, 
+                                     points = whitsundays_points, 
+                                     parallel = TRUE, 
+                                     cores = 8) |> 
+                      drop_na(wave_energy)
+
+ggplot() + theme_bw() +
+  geom_sf(
+    data = whitsundays |>mutate(habitat = if_else(!grepl("Reef", LOC_NAME_S), "island", "reef")),
+    aes(fill = habitat),
+    color = "black",
+    linewidth=0.1
+  ) +
+  scale_fill_manual(values = c("island" = "#ffffc0", "reef" = "#e6f8ff")) +
+  ggnewscale::new_scale_fill() +
+  geom_sf(data = whitsundays_waves, aes(fill = wave_energy), shape = 21, size = 3) +
+  scale_fill_distiller(palette = "RdYlBu", guide = guide_colorbar(title = "Wave Energy"))
+
+
+```

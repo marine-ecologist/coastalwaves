@@ -1,0 +1,85 @@
+---
+title: "3. Far Northern GBR"
+author: "George Roff"
+date: "2025-09-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r eval=TRUE, message=FALSE, warning=FALSE, include=FALSE, echo=FALSE}
+library(devtools)
+
+load_all()
+conflicted::conflicts_prefer(dplyr::filter)
+```
+
+Example from the far Northern GBR
+
+```{r fig.height=9, fig.width=7, message=FALSE, warning=FALSE, cache=TRUE}
+
+
+library(oceanwaves)
+library(dhw)
+library(sf)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+
+
+### download GBR shape file
+gbr_shape <- download_gbr_spatial(return = "base") |>
+  select(LOC_NAME_S, X_COORD, Y_COORD) |> 
+  st_make_valid() |> 
+  st_transform(20353)
+
+### Grep subset for target reefs, create union
+fn_ribbons <- gbr_shape |> 
+  filter(grepl("12-032|12-037|12-038|12-032|12-031", LOC_NAME_S))
+
+fn_ribbons_union <- fn_ribbons |>
+  st_union() |>
+  st_boundary() |>
+  st_cast("LINESTRING")
+
+# Extract broader region
+fn_ribbons_region <- st_crop(gbr_shape, 
+                             fn_ribbons_union |>
+                                st_union() |> 
+                                st_centroid() |> 
+                                st_buffer(20000))
+
+# get points
+fn_ribbons_points <- calculate_points(fn_ribbons_union, 100)
+
+
+### calculate fetch
+fn_ribbons_fetch <- calculate_fetch(point = fn_ribbons_points, 
+                                     degrees = 7.5, 
+                                     fetch = 5000, 
+                                     land = fn_ribbons_region, 
+                                     parallel = TRUE, 
+                                     cores = 8)
+
+
+### get wind data
+fn_ribbons_wind <- get_wind_data(fn_ribbons, "1989-09-01", "1989-09-10")
+
+
+### get waves
+fn_ribbons_waves <- calculate_waves(wind = fn_ribbons_wind, 
+                                     fetch = fn_ribbons_fetch, 
+                                     points = fn_ribbons_points, 
+                                     parallel = TRUE, 
+                                     cores = 8) 
+
+library(tmap) 
+tmap_mode("plot") +
+tm_basemap("Esri.WorldImagery") +
+tm_shape(fn_ribbons_waves) +
+  tm_dots(fill="wave_mean", shape=21, size=0.8,
+          fill.scale=tm_scale_continuous(values="-brewer.spectral"))
+
+
+```

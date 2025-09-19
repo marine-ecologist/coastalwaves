@@ -1,0 +1,84 @@
+---
+title: "2. Extract wind data"
+author: "George Roff"
+date: "2025-09-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+devtools::load_all()
+conflicted::conflicts_prefer(dplyr::filter)
+```
+
+`oceanwaves` gives two functions for extracting wind:
+
+### get_wind_data
+
+`get_wind_data` extracts daily Sea Surface Wind data from the NOAA NCEI blended daily averaged 0.25° (1987-recent) 
+
+```{r, message=FALSE, warning=FALSE, cache=TRUE}
+
+#library(oceanwaves)
+library(tidyverse)
+library(dhw)
+library(sf)
+library(lubridate)
+
+gbr_shape <- download_gbr_spatial(return = "base") |>
+  select(LOC_NAME_S, X_COORD, Y_COORD) |> 
+  st_make_valid() |> 
+  st_transform(20353)
+
+### Grep subset for target reefs, create union
+fn_ribbons <- gbr_shape |> 
+  filter(grepl("12-032|12-037|12-038|12-032|12-031", LOC_NAME_S))
+
+### get data
+fn_ribbons_wind <- get_wind_data(fn_ribbons, "2000-01-01", "2000-03-31") |>
+  mutate(date = as.POSIXct(date, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"))
+
+### plot
+ggplot(fn_ribbons_wind) +
+  geom_line(aes(x = date, y = windspeed_ms)) +
+  geom_point(aes(x = date, y = windspeed_ms)) +
+  labs(x = "Date", y = "Wind speed (m/s)") +
+  theme_bw()
+
+```
+
+
+### get_weather_data
+
+
+`get_weather_data` extracts data from a list of Weather Underground stations:
+
+```{r, message=FALSE, warning=FALSE, cache=TRUE}
+
+#library(oceanwaves)
+library(tidyverse)
+library(dhw)
+library(sf)
+library(lubridate)
+
+# create an sf point for the Whitsundays area
+# create an sf point for the Whitsundays area
+
+whits <- st_point(c(148, -20)) |> st_sfc(crs = 4326) |> st_sf()
+
+whitsundays_weather <- get_wind_data(
+    sf_obj = whits,
+    start_date = "2024-11-01",
+    end_date = "2024-12-31"
+) %>%
+  mutate(date = as.POSIXct(date, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"))
+
+ggplot(whitsundays_weather) +
+  geom_line(aes(x = date, y = windspeed_ms)) +
+  geom_point(aes(x = date, y = windspeed_ms)) +
+  labs(x = "Date", y = "Wind speed (m/s)") +
+  theme_bw()
+
+```
+
