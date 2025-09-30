@@ -1,10 +1,11 @@
-Package: oceanwaves
-Title: Calculate Fetch derived Ocean Waves
-Version: 0.1.0
+Package: coastalwaves
+Title: Calculate Fetch-Derived Coastal Waves
+Version: 0.2.0
 Authors@R: 
     person("George", "Roff", , "george.roff@csiro.au", role = c("aut", "cre"))
-Description: A package to calculate ocean waves based on wind and fetch-based vectors 
-URL: http://marine-ecologist.github.com/oceanwaves/
+Description: A package to calculate coastal wave energy based on wind and fetch-based vectors.
+URL: https://marine-ecologist.github.io/coastalwaves/, https://github.com/marine-ecologist/coastalwaves
+BugReports: https://github.com/marine-ecologist/coastalwaves/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -13,3 +14,10 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+Imports:
+    dplyr,
+    furrr,
+    httr,
+    purrr,
+    readr,
+    sf

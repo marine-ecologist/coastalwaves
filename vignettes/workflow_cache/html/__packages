@@ -1,4 +1,6 @@
-oceanwaves
+usethis
+devtools
+coastalwaves
 dhw
 sf
 tidyverse
@@ -11,8 +13,5 @@ dplyr
 stringr
 forcats
 lubridate
-future
-conflicted
-usethis
-devtools
 patchwork
+future

@@ -1,0 +1,98 @@
+---
+title: "1. Wave theory"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The `coastalwaves` R package provides a reproducible workflow to estimate physical exposure at coastal and reef sites by combining wind stress and fetch geometry with optional shallow-water corrections. The approach builds on widely used fetch-based exposure indices (e.g., Ekebom et al. 2003) but extends them to include potential wave energy flux.
+
+`coastalwaves` computes site-level exposure metrics from wind time series and fetch geometry:
+
+-   Wind stress index: wind stress projected along fetch rays (kN/m).
+
+-   Wave energy flux: SMB-based offshore waves^1^; optionally corrected to user depth (J/m/s).
+
+The workflow starts by quantifying wind stress, the shear force exerted by wind on the sea surface, using a neutral drag formulation \tau = 0.001(1.1+0.035U)U\^{2}, where U is 10 m wind speed in m s⁻¹ (Large & Pond 1981; U.S. Army Corps of Engineers 2002). Because waves develop only where wind blows across open water, the package calculates fetch — the distance of unobstructed water — along a set of radiating bearings around each site. Wind stress is projected onto each bearing by the cosine of the angular difference between wind direction and fetch bearing, producing a directional wind stress × fetch index (kN m⁻¹). Daily values are summed across all directions to produce a long-term exposure index representing cumulative wind-driven forcing at the site.
+
+Moving beyond simple fetch weighting, `coastalwaves` also estimates potential wave energy flux. It uses the SMB (Shore Protection Manual / Coastal Engineering Manual) deep-water growth curves (U.S. Army Corps of Engineers 2002) to predict significant wave height H_s and period T from wind speed and effective fetch. These are then converted to energy flux: P = E c_g, \quad E = \tfrac{1}{8}\rho g H_s\^2, where c_g is group velocity (Komar 1998). Optionally, the package corrects these offshore values to a user-specified site depth using linear wave theory: solving the dispersion relation for wavenumber k, adjusting group velocity and applying shoaling (K_s) and depth-limited breaking (H/h \leq 0.78). This step transforms deep-water wave power to a more realistic energy flux at reef depths (e.g., 20 m).
+
+**Theoretical differences to existing R packages (`fetchR` and `waver`**)
+
+-   `fetchR` is designed to measure **fetch distance only** — it calculates how far water extends from each site in multiple directions but does not use wind speed or direction. `coastalwaves` builds directly on this step but goes further by weighting each directional fetch by **wind stress** from time-series data, producing a wind stress × fetch index rather than just distance. This makes exposure dynamic and wind-driven rather than purely geometric.
+
+-   `waver` incorporates **wind and fetch** to estimate deep-water wave height and period using the SMB method but applies a single or broad directional input and returns deep-water potential wave power. `coastalwaves` differs by computing the same physics **per bearing**, explicitly projecting wind stress onto each fetch ray, then summing, then adds an optional **depth correction** step (shoaling and depth-limited breaking), which waver does not handle automatically, so results can be tuned to actual reef depth.
+
+------------------------------------------------------------------------
+
+### Wave Exposure Calculation
+
+The function estimates two exposure metrics from wind and fetch:
+
+**1. Wind stress index (kN/m)**
+
+\
+Wind stress is computed from neutral 10 m wind $U$ (m s⁻¹):
+
+$$
+\tau = 0.001(1.1 + 0.035U)U^{2} \quad [\mathrm{N\,m^{-2}}]
+$$
+
+Each fetch ray $F$ (m) is projected along the wind direction using $\cos(\theta)$.\
+Daily site index is:
+
+$$
+\mathrm{WindStress}_{\mathrm{site}} = \sum (\tau \cdot F \cdot \cos\theta)/1000 \;\; [\mathrm{kN/m}]
+$$
+
+directional sums are weighted by sector width \\Delta\\theta so results aren’t sensitive to the number of bearings:
+
+$$
+\text{total}=\sum (\cdot)\times \frac{\Delta\theta}{360}.
+$$
+
+#### **2. Wave energy flux at depth** $h$ (J/m/s)
+
+\
+Initial deep-water $H_s$ and $T$ use SMB relations (USACE CEM):
+
+$$
+H_{s0} = 0.283\,\tanh\!\big[(0.0125\,gF/U^2)^{0.42}\big]\,\frac{U^2}{g}
+$$
+
+$$
+T_{0} = 7.54\,\tanh\!\big[(0.077\,gF/U^2)^{0.25}\big]\,\frac{U}{g}
+$$
+
+Then adjusted for site depth $h$ using linear wave theory:
+
+-   Solve dispersion: $\omega^2 = gk\tanh(kh)$, $\omega=2\pi/T_0$
+-   Group velocity: $C_g = nC$, with $n = \tfrac12\big(1+2kh/\sinh(2kh)\big)$
+-   Shoaling: $K_s = \sqrt{C_{g,\mathrm{deep}}/C_g}$, where $C_{g,\mathrm{deep}}=gT_0/(4\pi)$
+-   Depth limit: $H_s=\min\!\big(H_{s0}K_s,\;0.42\,h\big).$
+
+Wave energy flux:
+
+$$
+P = \tfrac18\,\rho g H_s^2 C_g \;\; [\mathrm{J/m/s}]
+$$
+
+Daily totals sum across all bearings; mean is the time average.
+
+------------------------------------------------------------------------
+
+**Notes**
+
+^1^ SMB (Sverdrup–Munk–Bretschneider) wind-wave growth method is a classical, empirical set of fetch-duration-limited relationships that estimate deep-water significant wave height and characteristic period from a steady 10-m wind. SMB assumes steady, uniform wind over straight fetch, no currents, and deep water; nearshore effects (shoaling, breaking, bottom friction) require subsequent linear-wave transforms (dispersion, C_g, shoaling K_s, depth-limit H/h\\le 0.78).
+
+------------------------------------------------------------------------
+
+**References:**\
+- U.S. Army Corps of Engineers (2002). *Coastal Engineering Manual* (EM 1110-2-1100).\
+- Ekebom J, Laihonen P, Suominen T (2003). *Estuarine, Coastal and Shelf Science* 57:887-898.

@@ -1,13 +1,4 @@
-base
-methods
-datasets
-utils
-grDevices
-graphics
-stats
-usethis
-devtools
-oceanwaves
+coastalwaves
 dhw
 sf
 tidyverse

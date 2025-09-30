@@ -8,10 +8,12 @@ library(ggplot2)
 
 
 ### download GBR shape file
-gbr_shape <- download_gbr_spatial(return = "base") |>
-  select(LOC_NAME_S, X_COORD, Y_COORD) |>
-  st_make_valid() |>
-  st_transform(20353)
+if (!exists("gbr_shape")) {
+  gbr_shape <- download_gbr_spatial(return = "base") |>
+    dplyr::select(LOC_NAME_S, X_COORD, Y_COORD) |>
+    sf::st_make_valid() |>
+    sf::st_transform(20353)
+}
 
 
 ### Grep subset for target reefs
@@ -33,58 +35,43 @@ whitsundays_region <- st_crop(gbr_shape,
                                 st_centroid() |>
                                 st_buffer(20000))
 
+# create inset for mapping
+pinnacle <- st_bbox(c(xmin=148.962, xmax=148.968, ymin=-20.072, ymax=-20.06), crs=4326) |> st_transform(20353)
 
 
-spawning_dates <- seq(ymd("2018-11-01"), ymd("2024-12-31"), by = "day") %>%
-  keep(~ month(.) %in% c(11, 12)) %>%
-  format("%Y%m%d")
-
-
-whitsundays_weather <- get_wind_data(
-  sf_obj = st_point(c(148, -20)) |> st_sfc(crs = 4326) |> st_sf(),
-  start_date = "2024-11-01",
-  end_date = "2024-12-31"
-) %>%
-  mutate(date = as.POSIXct(date, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"))
+# load data
+df_whitsundays <- read.csv("/Users/rof011/coastalwaves/data/df_whitsundays.csv") |>
+  rename(windspeed_ms = wspeed,
+         date = time)
 
 
 
-whitsundays_points <- calculate_points(whitsundays_union, 50)
-
+whitsundays_points <- calculate_points(whitsundays_union, 20)
 
 whitsundays_fetch <- calculate_fetch(point = whitsundays_points,
                                      degrees = 7.5,
-                                     fetch = 5000,
+                                     fetch = 20000,
                                      land = whitsundays_region,
                                      parallel = TRUE,
-                                     cores = 8)
+                                     cores = 8) |> drop_na()
+
+whitsundays_waves <- calculate_wave_exposure(wind = df_whitsundays[1:365,],
+                                             fetch = whitsundays_fetch,
+                                             points = whitsundays_points,
+                                             parallel = TRUE,
+                                             cores = 8)
 
 
-whitsundays_waves <- calculate_waves(wind = whitsundays_weather,
-                                     fetch = whitsundays_fetch,
-                                     points = whitsundays_points,
-                                     parallel = TRUE,
-                                     cores = 8)
+wave_grid <- create_wave_grid(whitsundays_union, whitsundays_waves, interval = 20, width = 20)
 
-
-library(tmap)
 tmap_mode("view") +
-tm_shape( whitsundays |> mutate(habitat = if_else(!grepl("Reef", LOC_NAME_S), "island", "reef"))) +
+  tm_shape( whitsundays |> mutate(habitat = if_else(!grepl("Reef", LOC_NAME_S), "island", "reef")), bbox=pinnacle) +
   tm_polygons() +
-tm_shape(whitsundays_waves) +
-    tm_dots("wave_energy",
-            size=1.2,
-            fill.scale=tm_scale_continuous(values="brewer.spectral"))
+  tm_shape(wave_grid) +
+  tm_polygons("wave_energy_total")
 
-
-ggplot() + theme_bw() +
-  geom_sf(
-    data = whitsundays |>mutate(habitat = if_else(!grepl("Reef", LOC_NAME_S), "island", "reef")),
-    aes(fill = habitat),
-    color = "black",
-    linewidth=0.1
-  ) +
-  scale_fill_manual(values = c("island" = "#ffffc0", "reef" = "#e6f8ff")) +
-  ggnewscale::new_scale_fill() +
-  geom_sf(data = whitsundays_waves, aes(fill = wave_energy), shape = 21, size = 3) +
-  scale_fill_distiller(palette = "RdYlBu", guide = guide_colorbar(title = "Wave Energy"))
+tmap_mode("view") +
+  tm_shape( whitsundays |> mutate(habitat = if_else(!grepl("Reef", LOC_NAME_S), "island", "reef")), bbox=pinnacle) +
+  tm_polygons() +
+  tm_shape(whitsundays_waves) +
+  tm_dots("wave_energy_total", size=1.5)

@@ -1,8 +1,10 @@
 ---
-title: "2. Extract wind data"
-author: "George Roff"
-date: "2025-09-24"
-output: html_document
+title: "3. Extracting wind timeseries"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
@@ -16,11 +18,13 @@ conflicted::conflicts_prefer(dplyr::filter)
 
 ### get_wind_data
 
-`get_wind_data` extracts daily Sea Surface Wind data from the NOAA NCEI blended daily averaged 0.25° (1987-recent) 
+![](https://www.amqua.org/public/noaa-ncei.png){width="287"}
 
-```{r, message=FALSE, warning=FALSE, cache=TRUE}
+`get_wind_data` extracts daily Sea Surface Wind data from the NOAA NCEI blended daily averaged 0.25° (1987-recent) in metres per second (m s⁻¹).
 
-#library(oceanwaves)
+```{r eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+#library(coastalwaves)
 library(tidyverse)
 library(dhw)
 library(sf)
@@ -48,13 +52,13 @@ ggplot(fn_ribbons_wind) +
 
 ```
 
-
 ### get_weather_data
 
+![](https://upload.wikimedia.org/wikipedia/en/0/0f/Weath_undergr_logo14.png){width="194"}
 
-`get_weather_data` extracts data from a list of Weather Underground stations:
+`get_weather_data` extracts data from a list of Weather Underground stations in knots:
 
-```{r, message=FALSE, warning=FALSE, cache=TRUE}
+```{r eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
 #library(oceanwaves)
 library(tidyverse)
@@ -81,4 +85,3 @@ ggplot(whitsundays_weather) +
   theme_bw()
 
 ```
-

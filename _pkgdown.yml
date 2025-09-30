@@ -1,10 +1,6 @@
-url: https://marine-ecologist.github.io/oceanwaves/
+url: https://marine-ecologist.github.io/coastalwaves/
 template:
   bootstrap: 5
-
-authors:
-  George Roff:
-    href: https://github.com/marine-ecologist/
 
 navbar:
   structure:
@@ -20,17 +16,21 @@ navbar:
       text: "Vignettes"
       icon: fa-globe
       menu:
-        - text: "1. oceanwaves workflow"
+        - text: "functions"
+        - text: "1. Wave theory"
+          href: articles/theory.html
+        - text: "2. coastalwaves workflow"
           href: articles/workflow.html
-        - text: "2. Extract wind data"
+        - text: "3. Extract wind data"
           href: articles/wind.html
-        - text: "3a. Far Northern GBR example"
+        - text: "examples"
+        - text: "4a. Ribbon reefs, nGBR"
           href: articles/nGBR.html
-        - text: "3b. Capricorn Bunkers sGBR example"
+        - text: "4b. Capricorn Bunkers, sGBR"
           href: articles/sGBR.html
     github:
       icon: fa-github
       text: GitHub
-      href: https://github.com/marine-ecologist/coralseed/
+      href: https://github.com/marine-ecologist/coastalwaves/
     search:
       search: true

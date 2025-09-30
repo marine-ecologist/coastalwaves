@@ -1,26 +1,23 @@
 ---
-title: "3. Far Northern GBR"
-author: "George Roff"
-date: "2025-09-24"
-output: html_document
+title: "4a. Ribbon reefs, nGBR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-```{r eval=TRUE, message=FALSE, warning=FALSE, include=FALSE, echo=FALSE}
-library(devtools)
-
-load_all()
 conflicted::conflicts_prefer(dplyr::filter)
 ```
 
-Example from the far Northern GBR
+Example workflow from the far Northern GBR
 
 ```{r fig.height=9, fig.width=7, message=FALSE, warning=FALSE, cache=TRUE}
 
 
-library(oceanwaves)
+library(coastalwaves)
 library(dhw)
 library(sf)
 library(tidyverse)
@@ -64,22 +61,53 @@ fn_ribbons_fetch <- calculate_fetch(point = fn_ribbons_points,
 
 
 ### get wind data
-fn_ribbons_wind <- get_wind_data(fn_ribbons, "1989-09-01", "1989-09-10")
-
+#fn_ribbons_wind <- get_wind_data(st_centroid(st_union(fn_ribbons)), "1989-09-01", "1989-09-10")
+fn_ribbons_wind <- read.csv("/Users/rof011/coastalwaves/data/df_ngbr.csv") |> 
+  rename(windspeed_ms = wspeed, date=time)
 
 ### get waves
-fn_ribbons_waves <- calculate_waves(wind = fn_ribbons_wind, 
+fn_ribbons_waves <- calculate_wave_exposure(wind = fn_ribbons_wind, 
                                      fetch = fn_ribbons_fetch, 
                                      points = fn_ribbons_points, 
                                      parallel = TRUE, 
                                      cores = 8) 
 
+
+fn_ribbons_wave_grid <- create_wave_grid(fn_ribbons_union, fn_ribbons_waves, interval = 100, width = 100)
+
+
 library(tmap) 
 tmap_mode("plot") +
 tm_basemap("Esri.WorldImagery") +
-tm_shape(fn_ribbons_waves) +
-  tm_dots(fill="wave_mean", shape=21, size=0.8,
-          fill.scale=tm_scale_continuous(values="-brewer.spectral"))
+tm_shape(fn_ribbons_wave_grid) +
+  
+  tm_polygons(fill="wave_energy_mean", shape=21, size=0.8, fill_alpha=0.8,
+              fill.scale=tm_scale_continuous(values="-brewer.spectral"),
+              fill.legend=tm_legend_hide(),
+              label.format = tm_label_format(scientific = TRUE)) +
+   tm_scalebar(position = c("left", "bottom"))
+
+
+
+
+```
+
+
+
+```{r fig.height=6, fig.width=8, message=FALSE, warning=FALSE, cache=TRUE}
+
+
+insetbbox <- st_bbox(c(xmin=1472028, xmax=8645891, ymin=1476703, ymax=8648071)) 
+
+tmap_mode("plot") +
+  tm_basemap("Esri.WorldImagery") +
+  tm_shape(fn_ribbons_wave_grid |> st_crop(insetbbox)) +
+    tm_polygons(fill="wave_energy_mean", shape=21, size=0.8, fill_alpha=0.8,
+              fill.scale=tm_scale_continuous(values="-brewer.spectral"),
+              fill.legend = tm_legend(title="Mean wave\nexposure \n(J/m/s)",
+                                      title.fontfamily="Helvetica",title.size=1)) +
+tm_components(c("tm_legend"), position = tm_pos_out("right", "center"))#, bg.color = "grey95")
+
 
 
 ```

@@ -1,0 +1,152 @@
+---
+title: "Whitsundays reef area"
+format:
+  html:
+    code-fold: true
+    self-contained: true
+editor: visual
+---
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 11
+
+library(terra)
+library(tmap)
+library(sf)
+library(units)
+
+
+#' Extract an RGB mask and optionally save outputs
+#'
+#' @param img_path path to RGB image (GeoTIFF, PNG, JPG)
+#' @param thr list of R/G/B thresholds (each with min/max 0–255)
+#' @param out_mask optional path to write binary raster (tif)
+#' @param out_vect optional path to write polygons (gpkg/shp)
+#'
+#' @return a SpatRaster mask (1 = match, NA = no match)
+#' @export
+extract_rgb_mask <- function(img_path,
+                             thr = list(
+                               R = c(min = 0, max = 10),
+                               G = c(min = 55, max = 70),
+                               B = c(min = 70, max = 80)
+                             ),
+                             out_mask = NULL,
+                             out_vect = NULL) {
+  # --- load ---
+  x <- rast(img_path)
+  rgb <- x[[1:3]]
+  
+  # scale to 0–255 if needed
+  rng <- global(rgb, range, na.rm = TRUE)
+  if (all(rng[, 2] <= 1.01, na.rm = TRUE)) {
+    rgb <- rgb * 255
+  }
+  names(rgb) <- c("R", "G", "B")
+  
+  # build mask: 1 if within thresholds else NA
+  mask <- (rgb$R >= thr$R["min"] & rgb$R <= thr$R["max"]) &
+    (rgb$G >= thr$G["min"] & rgb$G <= thr$G["max"]) &
+    (rgb$B >= thr$B["min"] & rgb$B <= thr$B["max"])
+  
+  mask <- classify(mask, cbind(0, NA)) # convert FALSE to NA, keep TRUE as 1
+  
+  # write outputs if requested
+  if (!is.null(out_mask)) {
+    writeRaster(mask, out_mask, overwrite = TRUE)
+  }
+  if (!is.null(out_vect)) {
+    polys <- as.polygons(mask, dissolve = TRUE, values = TRUE, trunc = TRUE, na.rm = TRUE)
+    polys <- subset(polys, mask == 1, drop = TRUE)
+    writeVector(polys, out_vect, overwrite = TRUE)
+  }
+  
+  mask
+}
+
+hook_tiff <- "/Users/rof011/Whitsundays/HookIsland_North2.tiff"
+hayman_tiff <- "/Users/rof011/Whitsundays/HaymanIsland2.tiff"
+
+hook_rgba <- rast(hook_tiff)
+hayman_rgba <- rast(hayman_tiff)
+
+hook_reef <- extract_rgb_mask(hook_tiff)
+hayman_reef <- extract_rgb_mask(hayman_tiff)
+
+hook_polys <- as.polygons(hook_reef, dissolve = TRUE, values = TRUE, trunc = TRUE, na.rm = TRUE) |> st_as_sf()
+hayman_polys <- as.polygons(hayman_reef, dissolve = TRUE, values = TRUE, trunc = TRUE, na.rm = TRUE) |> st_as_sf()
+
+whitsundays_reef <- rbind(hook_polys, hayman_polys) |> st_transform(4326)
+
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 11
+
+hookflank <- whitsundays_reef |> st_crop(st_bbox(c(xmin=148.92, xmax=148.97, ymin=-20.08, ymax=-20.05)))
+
+round(set_units(st_area(hookflank), ha),2)
+                                        
+tmap_mode("plot") 
+tm_basemap("Esri.WorldImagery") +
+tm_shape(hookflank) +
+  tm_polygons(fill="red",
+              col="red")
+
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 11
+
+pinnacle <- whitsundays_reef |> st_crop(st_bbox(c(xmin=148.958, xmax=148.97, ymin=-20.0625, ymax=-20.05)))
+
+round(set_units(st_area(pinnacle), ha),2)
+
+
+tmap_mode("plot") 
+tm_basemap("Esri.WorldImagery") +
+tm_shape(pinnacle) +
+  tm_polygons(fill="red",
+              col="red")
+
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 11
+
+library(tidyverse)
+
+allen <- st_read("/Users/rof011/Whitsundays/Whitsundays-20250929002910/Benthic-Map/benthic.geojson", quiet=TRUE) 
+
+allen_pinnacle <- allen |> 
+  st_transform(st_crs(pinnacle)) %>%
+  st_crop(st_bbox(pinnacle)) %>%
+  mutate(area=round(set_units(st_area(.), ha),2))
+
+
+
+
+allen_pinnacle |> as.data.frame() |> group_by(class) |> summarise(area = sum(area))
+                                        
+tmap_mode("plot") 
+tm_basemap("Esri.WorldImagery") +
+tm_shape(allen) +
+  tm_polygons(fill="class",
+              fill_alpha = 0.5) +
+tm_shape(pinnacle, is.main=TRUE) +
+  tm_polygons(fill="red",
+              col="red")
+
+```
