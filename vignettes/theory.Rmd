@@ -1,10 +1,11 @@
 ---
 title: "1. Wave theory"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{workflow}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-show: true
+editor: visual
 ---
 
 ```{r setup, include=FALSE}

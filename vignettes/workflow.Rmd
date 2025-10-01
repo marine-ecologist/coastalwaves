@@ -1,10 +1,11 @@
 ---
 title: "2. coastalwaves workflow"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{workflow}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-show: true
+editor: visual
 ---
 
 ```{r, include = FALSE}
@@ -37,7 +38,7 @@ Using the Great Barrier Reef `sf` file, identify the polygons for wave mapping (
 
 ```{r, message=FALSE, warning=FALSE, fig.width=3.5, fig.height=5, cache=TRUE}
 
-library(coastalwaves)
+#library(coastalwaves)
 library(dhw)
 library(sf)
 library(tidyverse)
@@ -66,7 +67,6 @@ ggplot() + theme_bw() +
 
 Create an outer boundary surrounding the outer reef / island boundaries (land-sea interface) to calculate wave energy:
 
-
 ```{r, message=FALSE, warning=FALSE, fig.width=3.5, fig.height=5, cache=TRUE}
 
 whitsundays_union <- whitsundays |>
@@ -82,7 +82,6 @@ ggplot() + theme_bw() +
   geom_sf(data=whitsundays_union, show.legend=FALSE, linewidth=2)
 
 ```
-
 
 Finally, extract the broader seascape surrounding the target polygons of interest:
 
@@ -115,7 +114,6 @@ The `get_weather_data()` function extracts wind data (speed, bearing) from [Weat
 # whitsundays_weather <- get_weather_data(stations="ISHUTE4", daterange = spawning_dates, apikey="5cada843ef8e4f39ada843ef8e4f392d")
 
 ```
-
 
 ```{r, eval=TRUE, echo=TRUE, fig.height=6, fig.width=9, include=TRUE, cache=TRUE}
 
@@ -226,7 +224,6 @@ ggplot() + theme_bw() +
 
 ```
 
-
 # 4. Calculate wave energy
 
 ```{r, message=FALSE, warning=FALSE, fig.height=7, fig.width=10, cache=TRUE}
@@ -274,8 +271,8 @@ main_circles | inset_circles
 
 
 ```
-# 4. Calculate wave grid
 
+# 4. Calculate wave grid
 
 ```{r, message=FALSE, warning=FALSE, fig.height=7, fig.width=10, cache=TRUE}
 
@@ -321,8 +318,4 @@ main_grid | inset_grid
 
 ```
 
-References
-	•	Large, W.G. & Pond, S. (1981). Open ocean momentum flux measurements in moderate to strong winds. J. Phys. Oceanogr. 11, 324–336.
-	•	Keddy, P.A. (1982). Quantifying within-lake gradients of wave energy: Interrelationships of wave energy, substrate particle size and shoreline plants. Aquatic Botany 14, 41–58.
-	•	U.S. Army Corps of Engineers (2002). Coastal Engineering Manual (CEM), EM 1110-2-1100. Washington, DC.
-	•	Komar, P.D. (1998). Beach Processes and Sedimentation (2nd ed.). Prentice Hall.
+References • Large, W.G. & Pond, S. (1981). Open ocean momentum flux measurements in moderate to strong winds. J. Phys. Oceanogr. 11, 324–336. • Keddy, P.A. (1982). Quantifying within-lake gradients of wave energy: Interrelationships of wave energy, substrate particle size and shoreline plants. Aquatic Botany 14, 41–58. • U.S. Army Corps of Engineers (2002). Coastal Engineering Manual (CEM), EM 1110-2-1100. Washington, DC. • Komar, P.D. (1998). Beach Processes and Sedimentation (2nd ed.). Prentice Hall.
