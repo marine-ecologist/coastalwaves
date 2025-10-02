@@ -84,7 +84,7 @@
 polygons for wave mapping (Hook and Hayman reefs)</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="co">#library(coastalwaves)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marine-ecologist.github.io/coastalwaves/">coastalwaves</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marine-ecologist.github.io/dhw/" class="external-link">dhw</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
@@ -145,70 +145,50 @@ of interest:</p>
 <div class="section level3">
 <h3 id="import-weather-data">Import weather data<a class="anchor" aria-label="anchor" href="#import-weather-data"></a>
 </h3>
-<p>The <code><a href="../reference/get_weather_data.html">get_weather_data()</a></code> function extracts wind data
-(speed, bearing) from <a href="http://wunderground.com" class="external-link">Weather
-Underground</a> (requires API key for access). To test functionality
-here, extract dates around Nov/Dec spawning window for the past 2 years
-and plot to check timeseries (plot by 3-hrly averages)</p>
+<p>The <code><a href="../reference/get_wind_data.html">get_wind_data ()</a></code> function extracts daily wind data
+(speed, bearing) from the <a href="https://www.ncei.noaa.gov/products/blended-sea-winds" class="external-link">NOAA Blended
+Daily Seawinds dataset</a>.</p>
+<p>To test functionality here, extract dates around November spawning
+window for the past 3 years and plot timeseries.</p>
+<p>Wind data is extracted from the global dataset from the central grid
+cell overlapping the <code>whitsundays_union</code> object:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="co"># spawning_dates &lt;- seq(ymd("2018-11-01"), ymd("2024-12-31"), by = "day") %&gt;%</span></span>
-<span><span class="co">#   keep(~ month(.) %in% c(11, 12)) %&gt;%</span></span>
-<span><span class="co">#   format("%Y%m%d")</span></span>
-<span><span class="co"># </span></span>
-<span><span class="co"># whitsundays_weather &lt;- get_weather_data(stations="ISHUTE4", daterange = spawning_dates, apikey="5cada843ef8e4f39ada843ef8e4f392d")</span></span></code></pre></div>
+<span></span>
+<span></span>
+<span><span class="va">spawning_2022_wind</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_wind_data.html">get_wind_data</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="va">whitsundays_union</span><span class="op">)</span>, <span class="st">"2022-10-01"</span>, <span class="st">"2022-10-30"</span><span class="op">)</span></span>
+<span><span class="va">spawning_2023_wind</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_wind_data.html">get_wind_data</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="va">whitsundays_union</span><span class="op">)</span>, <span class="st">"2023-10-01"</span>, <span class="st">"2023-10-30"</span><span class="op">)</span></span>
+<span><span class="va">spawning_2024_wind</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_wind_data.html">get_wind_data</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="va">whitsundays_union</span><span class="op">)</span>, <span class="st">"2024-10-01"</span>, <span class="st">"2024-10-30"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># combine</span></span>
+<span><span class="va">whitsundays_weather</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">spawning_2022_wind</span>, <span class="va">spawning_2023_wind</span>, <span class="va">spawning_2024_wind</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="va">whitsundays_weather</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"/Users/rof011/coastalwaves/data/whitsundays_weather.rds"</span><span class="op">)</span></span>
+<span></span>
+<span></span>
 <span></span>
 <span><span class="va">bearingplot</span> <span class="op">&lt;-</span> <span class="va">whitsundays_weather</span> <span class="op">|&gt;</span>  </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>time <span class="op">=</span> <span class="fu"><a href="https://lubridate.tidyverse.org/reference/ymd_hms.html" class="external-link">ymd_hms</a></span><span class="op">(</span><span class="va">time</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="va">date</span>, tz <span class="op">=</span> <span class="st">"UTC"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>year <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor</a></span><span class="op">(</span><span class="fu"><a href="https://lubridate.tidyverse.org/reference/year.html" class="external-link">year</a></span><span class="op">(</span><span class="va">date</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>time_3hr <span class="op">=</span> <span class="fu">lubridate</span><span class="fu">::</span><span class="fu"><a href="https://lubridate.tidyverse.org/reference/round_date.html" class="external-link">floor_date</a></span><span class="op">(</span><span class="va">time</span>, unit <span class="op">=</span> <span class="st">"3 hours"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">time_3hr</span>, <span class="va">year</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
-<span>    speed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">windspeed_ms</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>    bearing <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">bearing</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>    .groups <span class="op">=</span> <span class="st">"drop"</span></span>
-<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">year</span>, scales<span class="op">=</span><span class="st">"free"</span>, nrow<span class="op">=</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">year</span>, scales<span class="op">=</span><span class="st">"free"</span>, nrow<span class="op">=</span><span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>limits<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">359</span><span class="op">)</span>, breaks<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">360</span>,<span class="fl">90</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time_3hr</span>, y <span class="op">=</span> <span class="va">bearing</span>, color<span class="op">=</span><span class="va">year</span><span class="op">)</span>, show.legend<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">date</span>, y <span class="op">=</span> <span class="va">bearing</span>, color<span class="op">=</span><span class="va">year</span><span class="op">)</span>, show.legend<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (3-hourly)"</span>, y <span class="op">=</span> <span class="st">"Bearing"</span>, title <span class="op">=</span> <span class="st">"3-Hourly Average Wind Bearing"</span><span class="op">)</span> </span>
 <span></span>
 <span><span class="va">speedplot</span> <span class="op">&lt;-</span> <span class="va">whitsundays_weather</span> <span class="op">|&gt;</span>  </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>time <span class="op">=</span> <span class="fu"><a href="https://lubridate.tidyverse.org/reference/ymd_hms.html" class="external-link">ymd_hms</a></span><span class="op">(</span><span class="va">time</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="va">date</span>, tz <span class="op">=</span> <span class="st">"UTC"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>year <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor</a></span><span class="op">(</span><span class="fu"><a href="https://lubridate.tidyverse.org/reference/year.html" class="external-link">year</a></span><span class="op">(</span><span class="va">date</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>time_3hr <span class="op">=</span> <span class="fu">lubridate</span><span class="fu">::</span><span class="fu"><a href="https://lubridate.tidyverse.org/reference/round_date.html" class="external-link">floor_date</a></span><span class="op">(</span><span class="va">time</span>, unit <span class="op">=</span> <span class="st">"3 hours"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">time_3hr</span>, <span class="va">year</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
-<span>    speed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">windspeed_ms</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>    bearing <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">bearing</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>    .groups <span class="op">=</span> <span class="st">"drop"</span></span>
-<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>limits<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">25</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">year</span>, scales<span class="op">=</span><span class="st">"free"</span>, nrow<span class="op">=</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time_3hr</span>, y <span class="op">=</span> <span class="va">speed</span>, color<span class="op">=</span><span class="va">year</span><span class="op">)</span>, show.legend<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">year</span>, scales<span class="op">=</span><span class="st">"free"</span>, nrow<span class="op">=</span><span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">date</span>, y <span class="op">=</span> <span class="va">windspeed_ms</span>, color<span class="op">=</span><span class="va">year</span><span class="op">)</span>, show.legend<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (3-hourly)"</span>, y <span class="op">=</span> <span class="st">"speed"</span>, title <span class="op">=</span> <span class="st">"3-Hourly Average Wind Speed"</span><span class="op">)</span> </span>
+<span></span>
 <span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span><span class="va">speedplot</span> <span class="op">+</span> <span class="va">bearingplot</span></span></code></pre></div>
 <p><img src="workflow_files/figure-html/unnamed-chunk-7-1.png" width="864"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span></span>
-<span><span class="va">whitsundays_daily</span> <span class="op">&lt;-</span> <span class="va">whitsundays_weather</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="fu">lubridate</span><span class="fu">::</span><span class="fu"><a href="https://lubridate.tidyverse.org/reference/month.html" class="external-link">month</a></span><span class="op">(</span><span class="va">date</span><span class="op">)</span> <span class="op">==</span> <span class="fl">11</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>       <span class="co"># keep only November</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">date</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
-<span>    bearing <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">bearing</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>    windspeed_ms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">windspeed_ms</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>    .groups <span class="op">=</span> <span class="st">"drop"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -216,7 +196,7 @@ and plot to check timeseries (plot by 3-hrly averages)</p>
 </h2>
 <p>Generate a series of points along the boundaries to calculate fetch
 (spacing in metres):</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">whitsundays_points</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_points.html">calculate_points</a></span><span class="op">(</span><span class="va">whitsundays_union</span>, <span class="fl">20</span><span class="op">)</span></span>
 <span></span>
@@ -252,7 +232,7 @@ and plot to check timeseries (plot by 3-hrly averages)</p>
 </h2>
 <p>For each point calculate the bearings and corresponding fetch length
 (20km)</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">whitsundays_fetch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_fetch.html">calculate_fetch</a></span><span class="op">(</span>point <span class="op">=</span> <span class="va">whitsundays_points</span>, </span>
 <span>                                     degrees <span class="op">=</span> <span class="fl">7.5</span>, </span>
@@ -270,9 +250,9 @@ and plot to check timeseries (plot by 3-hrly averages)</p>
 <div class="section level2">
 <h2 id="calculate-wave-energy">4. Calculate wave energy<a class="anchor" aria-label="anchor" href="#calculate-wave-energy"></a>
 </h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="va">whitsundays_waves</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_wave_exposure.html">calculate_wave_exposure</a></span><span class="op">(</span>wind <span class="op">=</span> <span class="va">whitsundays_daily</span>, </span>
+<span><span class="va">whitsundays_waves</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_wave_exposure.html">calculate_wave_exposure</a></span><span class="op">(</span>wind <span class="op">=</span> <span class="va">whitsundays_weather</span>, </span>
 <span>                                     fetch <span class="op">=</span> <span class="va">whitsundays_fetch</span>, </span>
 <span>                                     points <span class="op">=</span> <span class="va">whitsundays_points</span>, </span>
 <span>                                     parallel <span class="op">=</span> <span class="cn">TRUE</span>, </span>
@@ -316,7 +296,7 @@ and plot to check timeseries (plot by 3-hrly averages)</p>
 <div class="section level2">
 <h2 id="calculate-wave-grid">4. Calculate wave grid<a class="anchor" aria-label="anchor" href="#calculate-wave-grid"></a>
 </h2>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">wave_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_wave_grid.html">create_wave_grid</a></span><span class="op">(</span><span class="va">whitsundays_union</span>, <span class="va">whitsundays_waves</span>, interval <span class="op">=</span> <span class="fl">20</span>, width <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
 <span></span>

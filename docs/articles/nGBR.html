@@ -120,9 +120,7 @@
 <span></span>
 <span></span>
 <span><span class="co">### get wind data</span></span>
-<span><span class="co">#fn_ribbons_wind &lt;- get_wind_data(st_centroid(st_union(fn_ribbons)), "1989-09-01", "1989-09-10")</span></span>
-<span><span class="va">fn_ribbons_wind</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"/Users/rof011/coastalwaves/data/df_ngbr.csv"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>windspeed_ms <span class="op">=</span> <span class="va">wspeed</span>, date<span class="op">=</span><span class="va">time</span><span class="op">)</span></span>
+<span><span class="va">fn_ribbons_wind</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_wind_data.html">get_wind_data</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="va">fn_ribbons</span><span class="op">)</span><span class="op">)</span>, <span class="st">"1989-09-01"</span>, <span class="st">"1989-09-10"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">### get waves</span></span>
 <span><span class="va">fn_ribbons_waves</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_wave_exposure.html">calculate_wave_exposure</a></span><span class="op">(</span>wind <span class="op">=</span> <span class="va">fn_ribbons_wind</span>, </span>

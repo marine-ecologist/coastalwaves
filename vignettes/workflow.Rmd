@@ -22,6 +22,7 @@ load_all()
 conflicted::conflicts_prefer(dplyr::filter)
 
 library(coastalwaves)
+
 library(dhw)
 library(sf)
 library(tidyverse)
@@ -38,7 +39,7 @@ Using the Great Barrier Reef `sf` file, identify the polygons for wave mapping (
 
 ```{r, message=FALSE, warning=FALSE, fig.width=3.5, fig.height=5, cache=TRUE}
 
-#library(coastalwaves)
+library(coastalwaves)
 library(dhw)
 library(sf)
 library(tidyverse)
@@ -103,68 +104,53 @@ ggplot() + theme_bw() +
 
 ## Import weather data
 
-The `get_weather_data()` function extracts wind data (speed, bearing) from [Weather Underground](http://wunderground.com) (requires API key for access). To test functionality here, extract dates around Nov/Dec spawning window for the past 2 years and plot to check timeseries (plot by 3-hrly averages)
+The `get_wind_data ()` function extracts daily wind data (speed, bearing) from the [NOAA Blended Daily Seawinds dataset](https://www.ncei.noaa.gov/products/blended-sea-winds).
 
-```{r, message=FALSE, warning=FALSE, eval=FALSE, cache=TRUE}
+To test functionality here, extract dates around November spawning window for the past 3 years and plot timeseries.
 
-# spawning_dates <- seq(ymd("2018-11-01"), ymd("2024-12-31"), by = "day") %>%
-#   keep(~ month(.) %in% c(11, 12)) %>%
-#   format("%Y%m%d")
-# 
-# whitsundays_weather <- get_weather_data(stations="ISHUTE4", daterange = spawning_dates, apikey="5cada843ef8e4f39ada843ef8e4f392d")
+Wind data is extracted from the global dataset from the central grid cell overlapping the `whitsundays_union` object:
+
+```{r, message=FALSE, warning=FALSE, eval=TRUE, cache=TRUE}
+
+
+
+spawning_2022_wind <- get_wind_data(st_centroid(whitsundays_union), "2022-10-01", "2022-10-30")
+spawning_2023_wind <- get_wind_data(st_centroid(whitsundays_union), "2023-10-01", "2023-10-30")
+spawning_2024_wind <- get_wind_data(st_centroid(whitsundays_union), "2024-10-01", "2024-10-30")
+
+# combine
+whitsundays_weather <- rbind(spawning_2022_wind, spawning_2023_wind, spawning_2024_wind)
 
 ```
 
 ```{r, eval=TRUE, echo=TRUE, fig.height=6, fig.width=9, include=TRUE, cache=TRUE}
 
-whitsundays_weather <- readRDS("/Users/rof011/coastalwaves/data/whitsundays_weather.rds")
+
+
 
 bearingplot <- whitsundays_weather |>  
-  mutate(time = ymd_hms(time)) |> 
+  mutate(date = as.POSIXct(date, tz = "UTC")) |> 
   mutate(year = as.factor(year(date))) |> 
-  mutate(time_3hr = lubridate::floor_date(time, unit = "3 hours")) |> 
-  group_by(time_3hr, year) |> 
-  summarise(
-    speed = max(windspeed_ms, na.rm = TRUE),
-    bearing = mean(bearing, na.rm = TRUE),
-    .groups = "drop"
-  ) |> 
-
   ggplot() + theme_bw() +
-  facet_wrap(~year, scales="free", nrow=2) +
+  facet_wrap(~year, scales="free", nrow=3) +
   scale_y_continuous(limits=c(0,359), breaks=seq(0,360,90)) +
-  geom_line(aes(x = time_3hr, y = bearing, color=year), show.legend=FALSE) +
+  geom_line(aes(x = date, y = bearing, color=year), show.legend=FALSE) +
   labs(x = "Time (3-hourly)", y = "Bearing", title = "3-Hourly Average Wind Bearing") 
 
 speedplot <- whitsundays_weather |>  
-  mutate(time = ymd_hms(time)) |> 
+  mutate(date = as.POSIXct(date, tz = "UTC")) |> 
   mutate(year = as.factor(year(date))) |> 
-  mutate(time_3hr = lubridate::floor_date(time, unit = "3 hours")) |> 
-  group_by(time_3hr, year) |> 
-  summarise(
-    speed = max(windspeed_ms, na.rm = TRUE),
-    bearing = mean(bearing, na.rm = TRUE),
-    .groups = "drop"
-  ) |> 
-
   ggplot() + theme_bw() +
   scale_y_continuous(limits=c(0,25)) +
-  facet_wrap(~year, scales="free", nrow=2) +
-  geom_line(aes(x = time_3hr, y = speed, color=year), show.legend=FALSE) +
+  facet_wrap(~year, scales="free", nrow=3) +
+  geom_line(aes(x = date, y = windspeed_ms, color=year), show.legend=FALSE) +
   labs(x = "Time (3-hourly)", y = "speed", title = "3-Hourly Average Wind Speed") 
+
 
 library(patchwork)
 speedplot + bearingplot
 
 
-whitsundays_daily <- whitsundays_weather %>%
-  filter(lubridate::month(date) == 11) %>%       # keep only November
-  group_by(date) %>%
-  summarise(
-    bearing = mean(bearing, na.rm = TRUE),
-    windspeed_ms = mean(windspeed_ms, na.rm = TRUE),
-    .groups = "drop"
-)
 
 ```
 
@@ -228,7 +214,7 @@ ggplot() + theme_bw() +
 
 ```{r, message=FALSE, warning=FALSE, fig.height=7, fig.width=10, cache=TRUE}
 
-whitsundays_waves <- calculate_wave_exposure(wind = whitsundays_daily, 
+whitsundays_waves <- calculate_wave_exposure(wind = whitsundays_weather, 
                                      fetch = whitsundays_fetch, 
                                      points = whitsundays_points, 
                                      parallel = TRUE, 

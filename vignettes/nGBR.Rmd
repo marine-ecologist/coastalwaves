@@ -61,9 +61,7 @@ fn_ribbons_fetch <- calculate_fetch(point = fn_ribbons_points,
 
 
 ### get wind data
-#fn_ribbons_wind <- get_wind_data(st_centroid(st_union(fn_ribbons)), "1989-09-01", "1989-09-10")
-fn_ribbons_wind <- read.csv("/Users/rof011/coastalwaves/data/df_ngbr.csv") |> 
-  rename(windspeed_ms = wspeed, date=time)
+fn_ribbons_wind <- get_wind_data(st_centroid(st_union(fn_ribbons)), "1989-09-01", "1989-09-10")
 
 ### get waves
 fn_ribbons_waves <- calculate_wave_exposure(wind = fn_ribbons_wind, 
